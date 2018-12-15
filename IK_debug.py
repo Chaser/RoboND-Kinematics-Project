@@ -25,20 +25,20 @@ test_cases = {1:[[[2.16135,-1.42635,1.55109],
               4:[],
               5:[]}
 
-def transform_matrix(s, alpha, a, d, theta):
-    """Build the modified DH transformation matrix based on the provided theta, alpha, d and a values.
-        :param theta: Sympy symbol
+def transform_matrix(alpha, a, d, q):
+    """Build the modified DH transformation matrix based on the provided q, alpha, d and a values.
         :param alpha: Sympy symbol
         :param d: Sympy symbol
         :param a: Sympy symbol
+        :param q: Sympy symbol
         :return: Sympy Matrix object of the DH transformation matrix
     """
     # Create the transformation matrix template
     print('Creating Transformation Matrix')
-    T = Matrix([[ 		   cos(theta),           -sin(theta),           0,             a],
-        [ 		sin(theta)*cos(alpha), cos(theta)*cos(alpha), -sin(alpha), -sin(alpha)*d],
-        [       sin(theta)*sin(alpha), cos(theta)*sin(alpha),  cos(alpha),  cos(alpha)*d],
-        [                 	 	    0,                 	   0,           0,             1]])
+    T = Matrix([[ 		   cos(q),           -sin(q),           0,             a],
+        [ 		sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
+        [       sin(q)*sin(alpha), cos(q)*sin(alpha),  cos(alpha),  cos(alpha)*d],
+        [                 	    0,                 0,           0,             1]])
     return T
 
 def test_code(test_case):
@@ -78,33 +78,33 @@ def test_code(test_case):
     ## 
 
     ## Insert IK code here!
-    print('Assigning DH Paramters')
     # Create symbols
+    print('Creating symbols')
     d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')     
     a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
     alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
-    theta1, theta2, theta3, theta4, theta5, theta6, theta7 = symbols('theta1:theta8')
-    
+    q1, q2, q3, q4, q5, q6, q7 = symbols('q1:8')
+
     # Create Modified DH parameters
-    dh = {  alpha0:     0, d1:  0.75, a0:      0, theta1: 0,
-            alpha1: -pi/2, d2:     0, a1:   0.35, theta2: (theta2 - pi/2),
-            alpha2:     0, d3:     0, a2:   1.25, theta3: 0,
-            alpha3: -pi/2, d4:  1.50, a3: -0.054, theta4: 0,
-            alpha4:  pi/2, d5:     0, a4:      0, theta5: 0,
-            alpha5: -pi/2, d6:     0, a5:      0, theta6: 0,
-            alpha6:     0, d7: 0.303, a6:      0, theta7: 0
+    print('Assigning DH Paramters')
+    dh = {  alpha0:     0, d1:  0.75, a0:      0,
+            alpha1: -pi/2, d2:     0, a1:   0.35, q2: (q2 - pi/2),
+            alpha2:     0, d3:     0, a2:   1.25,
+            alpha3: -pi/2, d4:  1.50, a3: -0.054,
+            alpha4:  pi/2, d5:     0, a4:      0,
+            alpha5: -pi/2, d6:     0, a5:      0,
+            alpha6:     0, d7: 0.303, a6:      0, q7: 0
     }
-    
+
     # Create individual transformation matrices
-    # Note: also substitute in the DH parameters into the matrix 
-    T0_1 = transform_matrix(dh, alpha0, a0, d1, theta1).subs(dh)
-    T1_2 = transform_matrix(dh, alpha1, a1, d2, theta2).subs(dh)
-    T2_3 = transform_matrix(dh, alpha2, a2, d3, theta3).subs(dh)
-    T3_4 = transform_matrix(dh, alpha3, a3, d4, theta4).subs(dh)
-    T4_5 = transform_matrix(dh, alpha4, a4, d5, theta5).subs(dh)
-    T5_6 = transform_matrix(dh, alpha5, a5, d6, theta6).subs(dh)
-    T6_EE = transform_matrix(dh, alpha6, a6, d7, theta7).subs(dh)
-    
+    T0_1 = transform_matrix(alpha0, a0, d1, q1).subs(dh)
+    T1_2 = transform_matrix(alpha1, a1, d2, q2).subs(dh)
+    T2_3 = transform_matrix(alpha2, a2, d3, q3).subs(dh)
+    T3_4 = transform_matrix(alpha3, a3, d4, q4).subs(dh)
+    T4_5 = transform_matrix(alpha4, a4, d5, q5).subs(dh)
+    T5_6 = transform_matrix(alpha5, a5, d6, q6).subs(dh)
+    T6_EE = transform_matrix(alpha6, a6, d7, q7).subs(dh)
+
     # Composition of Homogenous (link) transformations
     # Transform from Base link to end effector (Gripper)
     T0_2 = simplify(T0_1 * T1_2) 	## Link_0 (Base) to Link_2
