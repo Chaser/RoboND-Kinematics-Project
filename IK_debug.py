@@ -41,6 +41,25 @@ def transform_matrix(alpha, a, d, q):
         [                 	    0,                 0,           0,             1]])
     return T
 
+def rotate_x(q):
+    R_x = Matrix([[ 1,              0,        0],
+                  [ 0,         cos(q),  -sin(q)],
+                  [ 0,         sin(q),  cos(q)]])
+    
+    return R_x
+    
+def rotate_y(q):              
+    R_y = Matrix([[ cos(q),        0,  sin(q)],
+                  [      0,            1,       0],
+                  [-sin(q),        0, cos(q)]])
+    
+    return R_y
+
+def rotate_z(q):    
+    R_z = Matrix([[ cos(q),  -sin(q),       0],
+                  [ sin(q),   cos(q),       0],
+                  [      0,        0,       1]])
+
 def test_code(test_case):
     ## Set up code
     ## Do not modify!
@@ -113,6 +132,21 @@ def test_code(test_case):
     T0_5 = simplify(T0_4 * T4_5) 	## Link_0 (Base) to Link_5
     T0_6 = simplify(T0_5 * T5_6) 	## Link_0 (Base) to Link_6
     T0_EE = simplify(T0_6 * T6_EE)	## Link_0 (Base) to End Effector
+	
+    print("\nT0_1 = \n")
+    print(T0_1.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
+    print("\nT0_2 = \n")
+    print(T0_2.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
+    print("T0_3 = \n")    
+    print(T0_3.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
+    print("T0_4 = \n")       
+    print(T0_4.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
+    print("T0_5 = \n")     
+    print(T0_5.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
+    print("T0_6 = \n")     
+    print(T0_6.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
+    print("T0_EE = \n")     
+    print(T0_EE.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
     
     theta1 = 0
     theta2 = 0
