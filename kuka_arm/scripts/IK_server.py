@@ -97,6 +97,7 @@ def handle_calculate_IK(req):
         T0_5 = (T0_4 * T4_5) 	## Link_0 (Base) to Link_5
         T0_6 = (T0_5 * T5_6) 	## Link_0 (Base) to Link_6
         T0_EE = (T0_6 * T6_EE)	## Link_0 (Base) to End Effector
+        
         #
         # Extract rotation matrices from the transformation matrices
         ###
@@ -112,7 +113,7 @@ def handle_calculate_IK(req):
         # Compensate for rotation discrepancy between DH parameters and Gripper link in URDF   
         R_err = R_z.subs(y, rad(180)) * R_y.subs(p, rad(-90))
         ROT_EE = R_EE * R_err
-
+        
         # Initialize service response
         joint_trajectory_list = []
         for x in xrange(0, len(req.poses)):
@@ -130,14 +131,36 @@ def handle_calculate_IK(req):
                 [req.poses[x].orientation.x, req.poses[x].orientation.y,
                     req.poses[x].orientation.z, req.poses[x].orientation.w])
 
-            ### Your IK code here
-	    # Compensate for rotation discrepancy between DH parameters and Gazebo
-	    #
-	    #
-	    # Calculate joint angles using Geometric IK method
-	    #
-	    #
-            ###
+            ROT_EE = ROT_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
+
+            EE = Matrix([[px], [py], [pz]])
+
+            WC = EE - (0.303) * ROT_EE[:,2]
+            # Calculate joint angles using Geometric IK method
+            theta1 = atan2(WC[1], WC[0])
+
+            # SSS triangle for theta2 and theta3
+            side_a = 1.501  # d4
+            side_b = sqrt(pow((sqrt(WC[0]*WC[0] + WC[1]*WC[1]) - 0.35), 2) + pow((WC[2] - 0.75), 2))   # d1: 0.75
+            side_c = 1.25   # a2
+
+            # Cosine Laws SSS to find angles of triangle
+            angle_a = acos((side_b*side_b + side_c*side_c - side_a*side_a) / (2*side_b*side_c))
+            angle_b = acos((side_a*side_a + side_c*side_c - side_b*side_b) / (2*side_a*side_c))
+            angle_c = acos((side_a*side_a + side_b*side_c - side_c*side_c) / (2*side_b*side_b))
+
+            theta2 = pi/2 - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0]*WC[0] + WC[1]*WC[1]) - 0.35)
+            theta3 = pi/2 - (angle_b + 0.036) # 0.036 accounts for sag in link4 of -0.054m
+
+
+            R0_3 = T0_1[0:3,0:3] * T1_2[0:3,0:3] * T2_3[0:3,0:3]
+            R0_3 = R0_3.evalf(subs={q1: theta1, q2:theta2, q3: theta3})
+
+            R3_6 = R0_3.transpose() * ROT_EE
+
+            theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+            theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2]*R3_6[2,2]), R3_6[1,2])
+            theta6 = atan2(-R3_6[1,1], R3_6[1,0])
 
             # Populate response for the IK request
             # In the next line replace theta1,theta2...,theta6 by your joint angle variables
