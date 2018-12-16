@@ -33,4 +33,76 @@ This project is inspired by the [Amazon Robotics Challenge](https://www.amazonro
 
 # Kinematic Analysis
 
-"[Kinematics](https://en.wikipedia.org/wiki/Kinematics)) is a branch of classic mechanics that describes the motion of points, bodies (objects), and systems of bodies (groups of objects) without considering the forces that caused the motion" - wiki.
+"[Kinematics](https://en.wikipedia.org/wiki/Kinematics)" is a branch of classic mechanics that describes the motion of points, bodies (objects), and systems of bodies (groups of objects) without considering the forces that caused the motion" - wiki.
+
+We learnt important theoretical concepts such as reference frames, generalized co-ordinates, degress of freedom and homogenous transforms.
+
+We were educated on Rigid bodies ("links") which are connected by kinematic pairs ("joints"). These joints are commonly revolute or prismatic which have 1 degree of freedom. Joints can be group (image below) which increases the degree's of freedom which are known as kinematic chains (Serial Manipulator/Robotic Arm).
+
+![alt text][image1]
+In Robotics there are two important kinematic equations, 1) Forward Kinematics and 2) Inverse Kinematics.
+
+Foward kinematics (fk) ("Joint Space") calculations the position of the end-effector from the known joint variables/parameters.
+
+Conversly, Inverse kinematics (ik) has the known Cartesian co-ordinates (position and orientation) of the end-effect and the objective is the solve the joint variables.
+
+As inverse kinematics "works backwards" multiple mathematicals solutions are possible which may not be real-world applicable.
+
+![alt text][image2]
+
+## Forward Kinematic Analysis
+The  Unified Robot Description Format (URDF) is an XML document that defines the robot model. Reviewing the `kr210.urdf.xacro` the position data (xyz) and orientation (rpy) of each join cant be found.
+
+Joint | Parent | Child | x  | y  | x  | roll  | pitch  | yaw  |
+----- | ------ | ----- | -- | -- | -- | -- | -- | -- |
+fixed_base_joint | base_footprint | base_link | 0 | 0 | 0 | 0 | 0 | 0
+joint_1 | base_link | link_1 | 0 | 0 | 0.33 | 0 | 0 | 0
+joint_2 | link_1    | link_2 | 0.35 | 0 | 0.42 | 0 | 0 | 0
+joint_3 | link_2    | link_3 | 0 | 0 | 0 | 1.25 | 0 | 0
+joint_4 | link_3    | link_4 | 0.96 | 0 | -0.054 | 0 | 0 | 0
+joint_5 | link_4    | link_5 | 0.54 | 0 | 0 | 0 | 0 | 0
+joint_6 | link_5    | link_6 | 0.11 | 0 | 0 | 0 | 0 | 0
+gripper_joint       | link_6 | gripper_link | 0.11 | 0 | 0 | 0 | 0 | 0
+Total       |  |  | 2.153 | 0 | 1.946 | 0 | 0 | 0
+
+## Denavit-Hartenberg Parameters
+Determining the location of the end effector requires the homogeneous tranfrom from the fixed based through all links (link 1, link 2 etc) to the end effector.
+
+![alt text][image3]
+
+Jacques Denavit and Richard Hartenberg simplified the process where their method only requires four parameters to describe the position and orientation of neighboring reference frames.
+
+![alt text][image4]
+
+Where:
+* α(alpha)​ = arm twist angle
+* a = arm link length
+* d​ = arm link offset
+* θ​ = arm joint angle
+
+Using the specifications from the Kuka KR210 `urdf` and the Denavit-Hartenberg method we can establish the DH parameters for a 6 Degree of Freedom (DoF) robotic arm as shown below.
+
+![alt text][image5]
+
+Joint | a(i-1) | Notes | d(i) | Notes
+---   | ---    | ---   | ---  | ---
+1 | a0 = 0  | Base link | d1 = 0.75 | -
+2 | a1 = 0.35 | - | d2 = 0 | 0 as X1 and X2 are perpendicular
+3 | a2 = 1.25 | - | d3 = 0 | X2 and X3 are coincident
+4 | a3 = -0.054 | - | d4 = 1.50 | -
+5 | a4 = 0 | O4/O5 are coincident | d5 = 0 | X4/X5 are coincident
+6 | a5 = 0 | O5/O6 are coincident | d6 = 0 | X5/X6 are coincident
+7 | a6 = 0 | O6/O7 are coincident | d7 = 0.303 |
+
+Links | α(i-1) | a(i-1) | d(i) | θ​(i)
+--- | --- | --- | --- | ---
+0 | - | 0 | 0 | 0
+1 | 0 | 0 | 0.75 | θ​1
+2 | -90| 0.35 | 0 | -pi/2 + θ​2
+3 | 0 | 1.25 | 0 | θ​3
+4 | -90 | -0.054 | 1.50 | θ​4
+5 | 90 | 0 | 0 | θ​5
+6 | -90 | 0 | 0 | θ​6
+7 (EE) | 0 | 0 | 0.303 | 07
+
+The above parameters are combined together using **Homogenous transforms**. This will be achieved using the python template `IK_server.py`
