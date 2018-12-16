@@ -33,32 +33,32 @@ def transform_matrix(alpha, a, d, q):
         :param q: Sympy symbol
         :return: Sympy Matrix object of the DH transformation matrix
     """
-    # Create the transformation matrix template
-    print('Creating Transformation Matrix')
     T = Matrix([[ 		   cos(q),           -sin(q),           0,             a],
         [ 		sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
         [       sin(q)*sin(alpha), cos(q)*sin(alpha),  cos(alpha),  cos(alpha)*d],
-        [                 	    0,                 0,           0,             1]])
+        [                 	 	0,                 0,           0,             1]])
     return T
 
-def rotate_x(q):
+def rotate_x(r):
     R_x = Matrix([[ 1,              0,        0],
-                  [ 0,         cos(q),  -sin(q)],
-                  [ 0,         sin(q),  cos(q)]])
+                  [ 0,         cos(r),  -sin(r)],
+                  [ 0,         sin(r),  cos(r)]])
     
     return R_x
     
-def rotate_y(q):              
-    R_y = Matrix([[ cos(q),        0,  sin(q)],
+def rotate_y(p):              
+    R_y = Matrix([[ cos(p),        0,  sin(p)],
                   [      0,            1,       0],
-                  [-sin(q),        0, cos(q)]])
+                  [-sin(p),        0, cos(p)]])
     
     return R_y
 
-def rotate_z(q):    
-    R_z = Matrix([[ cos(q),  -sin(q),       0],
-                  [ sin(q),   cos(q),       0],
+def rotate_z(y):    
+    R_z = Matrix([[ cos(y),  -sin(y),       0],
+                  [ sin(y),   cos(y),       0],
                   [      0,        0,       1]])
+    
+    return R_z
 
 def test_code(test_case):
     ## Set up code
@@ -97,6 +97,14 @@ def test_code(test_case):
     ## 
 
     ## Insert IK code here!
+    theta1 = 0;
+    theta2 = 0;
+    theta3 = 0;
+    theta4 = 0;
+    theta5 = 0;
+    theta6 = 0;
+    theta7 = 0;
+
     # Create symbols
     print('Creating symbols')
     d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')     
@@ -115,7 +123,10 @@ def test_code(test_case):
             alpha6:     0, d7: 0.303, a6:      0, q7: 0
     }
 
-    # Create individual transformation matrices
+    # Define Modified DH Transformation matrix
+    print('Defining Transformation Matrix')
+    # See transform_matrix() function
+
     T0_1 = transform_matrix(alpha0, a0, d1, q1).subs(dh)
     T1_2 = transform_matrix(alpha1, a1, d2, q2).subs(dh)
     T2_3 = transform_matrix(alpha2, a2, d3, q3).subs(dh)
@@ -126,12 +137,12 @@ def test_code(test_case):
 
     # Composition of Homogenous (link) transformations
     # Transform from Base link to end effector (Gripper)
-    T0_2 = simplify(T0_1 * T1_2) 	## Link_0 (Base) to Link_2
-    T0_3 = simplify(T0_2 * T2_3) 	## Link_0 (Base) to Link_3
-    T0_4 = simplify(T0_3 * T3_4) 	## Link_0 (Base) to Link_4
-    T0_5 = simplify(T0_4 * T4_5) 	## Link_0 (Base) to Link_5
-    T0_6 = simplify(T0_5 * T5_6) 	## Link_0 (Base) to Link_6
-    T0_EE = simplify(T0_6 * T6_EE)	## Link_0 (Base) to End Effector
+    T0_2 = (T0_1 * T1_2) 	## Link_0 (Base) to Link_2
+    T0_3 = (T0_2 * T2_3) 	## Link_0 (Base) to Link_3
+    T0_4 = (T0_3 * T3_4) 	## Link_0 (Base) to Link_4
+    T0_5 = (T0_4 * T4_5) 	## Link_0 (Base) to Link_5
+    T0_6 = (T0_5 * T5_6) 	## Link_0 (Base) to Link_6
+    T0_EE = (T0_6 * T6_EE)	## Link_0 (Base) to End Effector
 	
     print("\nT0_1 = \n")
     print(T0_1.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
@@ -147,6 +158,30 @@ def test_code(test_case):
     print(T0_6.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
     print("T0_EE = \n")     
     print(T0_EE.evalf(subs={q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0}))
+
+    # Extract end-effector position and orientation from request
+	# px,py,pz = end-effector position
+	# roll, pitch, yaw = end-effector orientation
+    px = req.poses[x].position.x
+    py = req.poses[x].position.y
+    pz = req.poses[x].position.z
+
+    
+    # Requested end-effector (EE) orientation
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(
+        [req.poses[x].orientation.x, req.poses[x].orientation.y,
+            req.poses[x].orientation.z, req.poses[x].orientation.w])
+    
+    # Find EE rotation matrix RPY (Roll, Pitch, Yaw)
+    r, p, y = symbols('r p y')
+
+    R_x = rotate_x(r)       # Roll
+    R_y = rotate_y(p)       # Pitch
+    R_z = rotate_z(y)       # Yaw
+
+    R_EE = R_z * R_y * R_x
+    print("R_EE = \n")        
+    print(R_EE)
     
     theta1 = 0
     theta2 = 0
