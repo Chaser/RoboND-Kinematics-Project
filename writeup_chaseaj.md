@@ -11,7 +11,7 @@
 [image4]: ./misc_images/dh_method.png
 [image5]: ./misc_images/6dof_dh.png
 [image6]: ./misc_images/transform_eq.png
-[image7]: ./misc_images/.png
+[image7]: ./misc_images/kuka_urdf_dh_diff.png
 [image8]: ./misc_images/.png
 [image9]: ./misc_images/.png
 [image10]: ./misc_images/.png
@@ -183,4 +183,24 @@ T_total = [[ 1.0,   0,   0, 2.153],
            [   0,   0, 1.0, 1.946],
            [   0,   0,   0,     1]]
 
+```
+
+## Gripper Orientation Correction
+
+Before calculating the inverse kinematics, we have to compensate for a different between the kuka `URDF` and `DH` parameters. It can be seen below yellow (`DH`) frame is different to the original green (`URDF`)
+
+![alt text][image7]
+
+To correct for these differences two rotational matrixes will be used. The first composed by a rotation of Z axis of 180° (π) followed by a rotation of the Y axis -90 (-π/2).
+
+```python
+R_x = rotate_x(r)       # Roll
+R_y = rotate_y(p)       # Pitch
+R_z = rotate_z(y)       # Yaw
+
+R_EE = R_z * R_y * R_x
+
+# Compensate for rotation discrepancy between DH parameters and Gripper link in URDF
+R_err = R_z.subs(y, rad(180)) * R_y.subs(p, rad(-90))
+ROT_EE = R_EE * R_err
 ```
