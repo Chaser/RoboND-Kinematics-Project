@@ -182,14 +182,64 @@ def test_code(test_case):
     R_EE = R_z * R_y * R_x
     print("R_EE = \n")        
     print(R_EE)
+   
+    # Compensate for rotation discrepancy between DH parameters and Gripper link in URDF   
+    R_err = R_z.subs(y, rad(180)) * R_y.subs(p, rad(-90))
+    ROT_EE = R_EE * R_err
+    print("ROT_EE = \n")    
+    print(ROT_EE)
+    ROT_EE = ROT_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
+    print("ROT_EE = \n")    
+    print(ROT_EE)
+   
+    EE = Matrix([[px], [py], [pz]])
+    print("EE = \n")  
+    print(EE)
     
-    theta1 = 0
-    theta2 = 0
-    theta3 = 0
-    theta4 = 0
-    theta5 = 0
-    theta6 = 0
+    WC = EE - (0.303) * ROT_EE[:,2]
+    print("WC = \n")  
+    print(WC)
+    
+    # Calculate joint angles using Geometric IK method
+    theta1 = atan2(WC[1], WC[0])
 
+    # SSS triangle for theta2 and theta3
+    side_a = 1.501  # d4
+    side_b = sqrt(pow((sqrt(WC[0]*WC[0] + WC[1]*WC[1]) - 0.35), 2) + pow((WC[2] - 0.75), 2))   # d1: 0.75
+    side_c = 1.25   # a2
+
+    # Cosine Laws SSS to find angles of triangle
+    angle_a = acos((side_b*side_b + side_c*side_c - side_a*side_a) / (2*side_b*side_c))
+    angle_b = acos((side_a*side_a + side_c*side_c - side_b*side_b) / (2*side_a*side_c))
+    angle_c = acos((side_a*side_a + side_b*side_c - side_c*side_c) / (2*side_b*side_b))
+    
+    theta2 = pi/2 - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0]*WC[0] + WC[1]*WC[1]) - 0.35)
+    theta3 = pi/2 - (angle_b + 0.036) # 0.036 accounts for sag in link4 of -0.054m
+
+    R0_3 = T0_1[0:3,0:3] * T1_2[0:3,0:3] * T2_3[0:3,0:3]
+    print("R0_3 = \n")  
+    print(R0_3)
+    R0_3 = R0_3.evalf(subs={'q1': theta1, 'q2': theta2, 'q3': theta3})
+    print(R0_3)
+
+    # Get rotation matrix R3_6 from (transpose of R0_3 * R_EE)
+    R3_6 = R0_3.T * ROT_EE
+    print("R3_6 = \n")  
+    print(R3_6)
+    
+    # Eular angles from rotation matrix
+    theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+    theta5 = atan2(sqrt(R3_6[0,2]**2 + R3_6[2,2]**2), R3_6[1,2])
+    theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+    
+    print('Theta Calculations')
+    print (theta1)
+    print (theta2)
+    print (theta3)
+    print (theta4)
+    print (theta5)
+    print (theta6)
+    
     ## 
     ########################################################################################
     
@@ -198,13 +248,16 @@ def test_code(test_case):
     ## as the input and output the position of your end effector as your_ee = [x,y,z]
 
     ## (OPTIONAL) YOUR CODE HERE!
+    FK = T0_EE.evalf(subs={q1:theta1,q2:theta2,q3:theta3,q4:theta4,q5:theta5,q6:theta6})
 
     ## End your code input for forward kinematics here!
     ########################################################################################
 
     ## For error analysis please set the following variables of your WC location and EE location in the format of [x,y,z]
-    your_wc = [1,1,1] # <--- Load your calculated WC values in this array
-    your_ee = [1,1,1] # <--- Load your calculated end effector value from your forward kinematics
+    your_wc = [WC[0],WC[1],WC[2]] # <--- Load your calculated WC values in this array
+    your_ee = [FK[0,3],FK[1,3],FK[2,3]] # <--- Load your calculated end effector value from your forward kinematics
+    print('Your EE')
+    print(your_ee)
     ########################################################################################
 
     ## Error analysis
