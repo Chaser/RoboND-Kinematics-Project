@@ -211,7 +211,7 @@ def test_code(test_case):
     # Cosine Laws SSS to find angles of triangle
     angle_a = acos((side_b*side_b + side_c*side_c - side_a*side_a) / (2*side_b*side_c))
     angle_b = acos((side_a*side_a + side_c*side_c - side_b*side_b) / (2*side_a*side_c))
-    angle_c = acos((side_a*side_a + side_b*side_c - side_c*side_c) / (2*side_b*side_b))
+    angle_c = acos((side_a*side_a + side_b*side_b - side_c*side_c) / (2*side_a*side_b))
     
     theta2 = pi/2 - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0]*WC[0] + WC[1]*WC[1]) - 0.35)
     theta3 = pi/2 - (angle_b + 0.036) # 0.036 accounts for sag in link4 of -0.054m
@@ -219,7 +219,7 @@ def test_code(test_case):
     R0_3 = T0_1[0:3,0:3] * T1_2[0:3,0:3] * T2_3[0:3,0:3]
     print("R0_3 = \n")  
     print(R0_3)
-    R0_3 = R0_3.evalf(subs={'q1': theta1, 'q2': theta2, 'q3': theta3})
+    R0_3 = R0_3.evalf(subs={q1: theta1, q2: theta2, q3: theta3})
     print(R0_3)
 
     # Get rotation matrix R3_6 from (transpose of R0_3 * R_EE)
