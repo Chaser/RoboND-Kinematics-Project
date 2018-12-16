@@ -18,6 +18,40 @@ from geometry_msgs.msg import Pose
 from mpmath import *
 from sympy import *
 
+def transform_matrix(alpha, a, d, q):
+    """Build the modified DH transformation matrix based on the provided q, alpha, d and a values.
+        :param alpha: Sympy symbol
+        :param d: Sympy symbol
+        :param a: Sympy symbol
+        :param q: Sympy symbol
+        :return: Sympy Matrix object of the DH transformation matrix
+    """
+    T = Matrix([[ 		   cos(q),           -sin(q),           0,             a],
+        [ 		sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
+        [       sin(q)*sin(alpha), cos(q)*sin(alpha),  cos(alpha),  cos(alpha)*d],
+        [                 	 	0,                 0,           0,             1]])
+    return T
+
+def rotate_x(r):
+    R_x = Matrix([[ 1,              0,        0],
+                  [ 0,         cos(r),  -sin(r)],
+                  [ 0,         sin(r),  cos(r)]])
+    
+    return R_x
+    
+def rotate_y(p):              
+    R_y = Matrix([[ cos(p),        0,  sin(p)],
+                  [      0,            1,       0],
+                  [-sin(p),        0, cos(p)]])
+    
+    return R_y
+
+def rotate_z(y):    
+    R_z = Matrix([[ cos(y),  -sin(y),       0],
+                  [ sin(y),   cos(y),       0],
+                  [      0,        0,       1]])
+    
+    return R_z
 
 def handle_calculate_IK(req):
     rospy.loginfo("Received %s eef-poses from the plan" % len(req.poses))
