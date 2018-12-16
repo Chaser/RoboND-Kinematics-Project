@@ -62,21 +62,56 @@ def handle_calculate_IK(req):
 
         ### Your FK code here
         # Create symbols
-	#
-	#
-	# Create Modified DH parameters
-	#
-	#
-	# Define Modified DH Transformation matrix
-	#
-	#
-	# Create individual transformation matrices
-	#
-	#
-	# Extract rotation matrices from the transformation matrices
-	#
-	#
+        d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')
+        a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
+        alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
+        q1, q2, q3, q4, q5, q6, q7 = symbols('q1:8')
+
+        # Create Modified DH parameters
+        dh = {  alpha0:     0, d1:  0.75, a0:      0,
+                alpha1: -pi/2, d2:     0, a1:   0.35, q2: (q2 - pi/2),
+                alpha2:     0, d3:     0, a2:   1.25,
+                alpha3: -pi/2, d4:  1.50, a3: -0.054,
+                alpha4:  pi/2, d5:     0, a4:      0,
+                alpha5: -pi/2, d6:     0, a5:      0,
+                alpha6:     0, d7: 0.303, a6:      0, q7: 0
+        }
+
+        # Define Modified DH Transformation matrix
+        # See transform_matrix() function
+        
+        # Create individual transformation matrices
+        T0_1 = transform_matrix(alpha0, a0, d1, q1).subs(dh)
+        T1_2 = transform_matrix(alpha1, a1, d2, q2).subs(dh)
+        T2_3 = transform_matrix(alpha2, a2, d3, q3).subs(dh)
+        T3_4 = transform_matrix(alpha3, a3, d4, q4).subs(dh)
+        T4_5 = transform_matrix(alpha4, a4, d5, q5).subs(dh)
+        T5_6 = transform_matrix(alpha5, a5, d6, q6).subs(dh)
+        T6_EE = transform_matrix(alpha6, a6, d7, q7).subs(dh)
+
+        # Composition of Homogenous (link) transformations
+        # Transform from Base link to end effector (Gripper)
+        T0_2 = (T0_1 * T1_2) 	## Link_0 (Base) to Link_2
+        T0_3 = (T0_2 * T2_3) 	## Link_0 (Base) to Link_3
+        T0_4 = (T0_3 * T3_4) 	## Link_0 (Base) to Link_4
+        T0_5 = (T0_4 * T4_5) 	## Link_0 (Base) to Link_5
+        T0_6 = (T0_5 * T5_6) 	## Link_0 (Base) to Link_6
+        T0_EE = (T0_6 * T6_EE)	## Link_0 (Base) to End Effector
+        #
+        # Extract rotation matrices from the transformation matrices
         ###
+        # Find EE rotation matrix RPY (Roll, Pitch, Yaw)
+        r, p, y = symbols('r p y')
+        
+        R_x = rotate_x(r)       # Roll
+        R_y = rotate_y(p)       # Pitch
+        R_z = rotate_z(y)       # Yaw
+
+        R_EE = R_z * R_y * R_x
+        
+        # Compensate for rotation discrepancy between DH parameters and Gripper link in URDF   
+        R_err = R_z.subs(y, rad(180)) * R_y.subs(p, rad(-90))
+        ROT_EE = R_EE * R_err
 
         # Initialize service response
         joint_trajectory_list = []
