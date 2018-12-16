@@ -10,7 +10,7 @@
 [image3]: ./misc_images/fk_homogeneous_transform.png
 [image4]: ./misc_images/dh_method.png
 [image5]: ./misc_images/6dof_dh.png
-[image6]: ./misc_images/.png
+[image6]: ./misc_images/transform_eq.png
 [image7]: ./misc_images/.png
 [image8]: ./misc_images/.png
 [image9]: ./misc_images/.png
@@ -162,3 +162,25 @@ T3_4 = transform_matrix(dh, alpha3, a3, d4, theta4)
 T4_5 = transform_matrix(dh, alpha4, a4, d5, theta5)
 T5_6 = transform_matrix(dh, alpha5, a5, d6, theta6)
 T6_EE = transform_matrix(dh, alpha6, a6, d7, theta7)
+```
+
+### Composition of Homogenous (link) transformations
+
+With the invdivdual link transforms known an overall transform between the base frame (base link) and the end effecotr (gripper) is composed by individual link transforms.
+
+![alt text][image6]
+
+```python
+# Composition of Homogenous (link) transformations
+TO_EE = simplify(T0_1 * T1_T2 * T2_T3 * T3_4 * T5_T6 * T6_EE)
+```
+
+Substituting for joint angles of zero (θ​ = 0) yields:
+
+```bash
+T_total = [[ 1.0,   0,   0, 2.153],
+           [   0, 1.0,   0,     0],
+           [   0,   0, 1.0, 1.946],
+           [   0,   0,   0,     1]]
+
+```
