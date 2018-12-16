@@ -106,3 +106,59 @@ Links | α(i-1) | a(i-1) | d(i) | θ​(i)
 7 (EE) | 0 | 0 | 0.303 | 07
 
 The above parameters are combined together using **Homogenous transforms**. This will be achieved using the python template `IK_server.py`
+
+## Homogenous Transform Implementation
+
+### Create the symbols
+
+```python
+theta1, theta2, theta3, theta4, theta5, theta6, theta7 = symbols('theta1:8')
+d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')
+a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
+alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
+q1, q2, q3, q4, q5, q6, q7 = symbols('q1:8')
+```
+
+### Create Modified DH parameters
+
+```python
+# Create Modified DH parameters
+print('Assigning DH Paramters')
+dh = {  alpha0:     0, d1:  0.75, a0:      0,
+        alpha1: -pi/2, d2:     0, a1:   0.35, q2: (q2 - pi/2),
+        alpha2:     0, d3:     0, a2:   1.25,
+        alpha3: -pi/2, d4:  1.50, a3: -0.054,
+        alpha4:  pi/2, d5:     0, a4:      0,
+        alpha5: -pi/2, d6:     0, a5:      0,
+        alpha6:     0, d7: 0.303, a6:      0, q7: 0
+}
+```
+
+### Define Modified DH Transformation matrix
+
+```python
+def transform_matrix(alpha, a, d, q):
+    """Build the modified DH transformation matrix based on the provided q, alpha, d and a values.
+        :param alpha: Sympy symbol
+        :param d: Sympy symbol
+        :param a: Sympy symbol
+        :param q: Sympy symbol
+        :return: Sympy Matrix object of the DH transformation matrix
+    """
+    T = Matrix([[ 		   cos(q),           -sin(q),           0,             a],
+        [ 		sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
+        [       sin(q)*sin(alpha), cos(q)*sin(alpha),  cos(alpha),  cos(alpha)*d],
+        [                 	 	0,                 0,           0,             1]])
+    return T
+```
+
+### Create individual joint transformation matrices
+
+```python
+T0_1 = transform_matrix(dh, alpha0, a0, d1, theta1)
+T1_2 = transform_matrix(dh, alpha1, a1, d2, theta2)
+T2_3 = transform_matrix(dh, alpha2, a2, d3, theta3)
+T3_4 = transform_matrix(dh, alpha3, a3, d4, theta4)
+T4_5 = transform_matrix(dh, alpha4, a4, d5, theta5)
+T5_6 = transform_matrix(dh, alpha5, a5, d6, theta6)
+T6_EE = transform_matrix(dh, alpha6, a6, d7, theta7)
