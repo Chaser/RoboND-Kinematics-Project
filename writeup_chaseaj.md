@@ -12,11 +12,10 @@
 [image5]: ./misc_images/6dof_dh.png
 [image6]: ./misc_images/transform_eq.png
 [image7]: ./misc_images/kuka_urdf_dh_diff.png
-[image8]: ./misc_images/.png
-[image9]: ./misc_images/.png
-[image10]: ./misc_images/.png
+[image8]: ./misc_images/wc_eqn.png
+[image9]: ./misc_images/theta1.png
+[image10]: ./misc_images/cosine_laws.png
 
-[image20]: ./misc_images/fk.png
 
 **Aim:**  The aim of the `Pick & Place` project is to understand kinematics (forward/inverse) and use these studies in conjunction with ROS to program a robtic arm to pick objects from a shelf and place them in a bin.
 
@@ -204,3 +203,82 @@ R_EE = R_z * R_y * R_x
 R_err = R_z.subs(y, rad(180)) * R_y.subs(p, rad(-90))
 ROT_EE = R_EE * R_err
 ```
+
+## Decoupling the Inverse Kinematics Problem
+
+As indicated earlier Inverse kinematics use pose (position/orientation) of the known end effort to calculate the joint angles of the manipulator.
+
+As indicated in the lectures, when a robots last three joints are revolute and their joints intersect at a single point, we have a case of **spherical wrist** with `joint_5` being the **wrist center**
+
+The wrist center (WC) calculation is given by the equation below. What this means is that the wrist center depends on the position (roll/pitch/yaw) of the end-effector (gripper)
+
+![alt text][image8]
+
+Programatically this is becomes:
+
+```python
+ROT_EE = ROT_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
+EE = Matrix([[px], [py], [pz]])
+WC = EE - (0.303) * ROT_EE[:,2]
+```
+
+where 0.303 is `d7` from the `DH Table`
+
+With the wrist center determined `theta1` can be calculated as follows.
+
+![alt text][image9]
+
+```python
+theta1 = atan2(WC[1], WC[0])
+```
+
+Calculation of `theta2` and `theta3` leverages [Cosine Laws](https://en.wikipedia.org/wiki/Law_of_cosines)
+
+![alt text][image10]
+
+```python
+# SSS triangle for theta2 and theta3
+side_a = 1.501  # d4 = sqrt(1.5^2 + -0.054^2) = 1.500971685275908 ~ 1.501
+side_b = sqrt(pow((sqrt(WC[0]*WC[0] + WC[1]*WC[1]) - 0.35), 2) + pow((WC[2] - 0.75), 2))   # d1: 0.75
+side_c = 1.25   # a2
+
+# Cosine Laws SSS to find angles of triangle
+angle_a = acos((side_b*side_b + side_c*side_c - side_a*side_a) / (2*side_b*side_c))
+angle_b = acos((side_a*side_a + side_c*side_c - side_b*side_b) / (2*side_a*side_c))
+angle_c = acos((side_a*side_a + side_b*side_b - side_c*side_c) / (2*side_a*side_b))
+
+theta2 = pi/2 - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0]*WC[0] + WC[1]*WC[1]) - 0.35)
+theta3 = pi/2 - (angle_b + 0.036) # 0.036 accounts for sag in link4 of -0.054m
+```
+
+With `theta1, theta2, theta3` calculated now need to find the values of the final three joint variables.
+
+Using the individual DH transforms we can obtain the resultant transform and hence resultant rotation by:
+
+```python
+R0_6 = R0_1*R1_2*R2_3*R3_4*R4_5*R5_6
+```
+
+We can substitute the values we calculated for joints 1 to 3 in their respective individual rotation matrices and pre-multiply both sides of the above equation by **`inv(R0_3)`** which leads to:
+
+```python
+R3_6 = inv(R0_3) * Rrpy
+```
+
+Note: Inverse or Transpostion can be used as the rotation matrices are orthogonal which means that its transpose is equal to its [inverse](https://en.wikipedia.org/wiki/Orthogonal_matrix)
+
+```python
+R0_3 = T0_1[0:3,0:3] * T1_2[0:3,0:3] * T2_3[0:3,0:3]
+R0_3 = R0_3.evalf(subs={q1: theta1, q2:theta2, q3: theta3})
+R3_6 = R0_3.transpose() * ROT_EE
+
+theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2]*R3_6[2,2]), R3_6[1,2])
+theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+```
+
+
+## Final Result
+
+The project succesfully picked the object from the shelf and placed it in the bin. However, while the movement (trajectory) and action was successful the process was CPU intensive and planning (calculating) to actioning was significantly slow. It will be interesting to explore this topic more to see if the process can be optimised to perform faster (real-time)responses.
+
